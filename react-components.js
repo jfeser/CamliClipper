@@ -20,8 +20,10 @@ var Popup = React.createClass({
     getQueryParam_: function(param) {
         var vars = this.props.queryString.split("&");
         for (var i=0; i<vars.length; i++) {
-            var pair = vars[i].split("=");
-            if (pair[0] == param){ return pair[1]; }
+            var firstEq = vars[i].indexOf('=');
+            var maybe_param = vars[i].substring(0, firstEq);
+            var value = vars[i].substring(firstEq+1);
+            if (maybe_param == param){ return value; }
         }
        return false;
     },
