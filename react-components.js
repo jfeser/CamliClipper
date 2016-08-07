@@ -148,8 +148,13 @@ var ImageSubmitForm = React.createClass({
 
     validateForm_: function() {
         if (this.state.tagsInput) {
-            var tags = this.state.tagsInput.split(',').map(function(s) { return s.trim(); });
-            var invalid = tags.some(function(t) { return !t });
+            var tags = null;
+            if (!this.state.tagsInput) {
+                tags = [];
+            } else {
+                tags = this.state.tagsInput.split(',').map(function(s) { return s.trim(); });
+            }
+            var invalid = tags.some(function(t) { return !t; });
 
             if (invalid) {
                 this.setState({
@@ -335,7 +340,14 @@ var ImageSubmitForm = React.createClass({
     addTags_: function(results) {
         var sc = this.props.serverConnection;
         var promises = [];
-        var tags = this.state.tagsInput.split(',').map(function(s) { return s.trim(); });
+
+        var tags = null;
+        if (!this.state.tagsInput) {
+            tags = [];
+        } else {
+            tags = this.state.tagsInput.split(',').map(function(s) { return s.trim(); });
+        }
+
         tags.forEach(function(tag) {
         if (tag) {
             promises.push(sc.updatePermanodeAttr(results.permanoderef, "add-attribute", "tag", tag));
