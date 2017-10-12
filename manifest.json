@@ -14,7 +14,7 @@
     },
 
     "background" : {
-        "persistent": false,
+        "persistent": true,
         "scripts": ["background.js"]
     },
 
@@ -23,6 +23,8 @@
         "contextMenus",
         "http://*/",
         "https://*/",
+        "webRequest",
+        "webRequestBlocking",
         "storage"
     ]
 }

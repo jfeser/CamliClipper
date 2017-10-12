@@ -1,3 +1,5 @@
+/*global React,FileReader,Crypto,Blob,chrome */
+
 var Popup = React.createClass({
     displayName: 'Popup',
 
@@ -12,7 +14,7 @@ var Popup = React.createClass({
 
     getInitialState: function() {
         return {
-            statusMessage: '',
+            statusMessage: ''
         };
     },
 
@@ -39,20 +41,20 @@ var Popup = React.createClass({
             React.createElement("h3", null, "C3: Camli Clipper (Chrome)"),
             React.createElement(ImagePreview,
             {
-                imgSrc: this.getQueryParam_('imgSrc'),
+                imgSrc: decodeURIComponent(this.getQueryParam_('imgSrc'))
             }),
             React.createElement(ImageSubmitForm,
             {
                 onError: this.setStatus,
                 onProgress: this.setStatus,
-                imgSrc: this.getQueryParam_('imgSrc'),
-                referrerUrl: this.getQueryParam_('referrer'),
+                imgSrc: decodeURIComponent(this.getQueryParam_('imgSrc')),
+                referrerUrl: decodeURIComponent(this.getQueryParam_('referer')),
                 serverConnection: this.props.serverConnection,
-                defaultTags: this.props.config.defaultTags,
+                defaultTags: this.props.config.defaultTags
             }),
             React.createElement(Status,
             {
-                message: this.state.statusMessage,
+                message: this.state.statusMessage
             })
         );
     }
@@ -62,7 +64,7 @@ var Status = React.createClass({
     displayName: 'Status',
 
     propTypes: {
-        message: React.PropTypes.string.isRequired,
+        message: React.PropTypes.string.isRequired
     },
 
     render: function() {
@@ -79,7 +81,7 @@ var ImagePreview = React.createClass({
     displayName: 'ImagePreview',
 
     propTypes: {
-        imgSrc: React.PropTypes.string.isRequired,
+        imgSrc: React.PropTypes.string.isRequired
     },
 
     render: function() {
@@ -98,13 +100,13 @@ var ImageSubmitForm = React.createClass({
         onError: React.PropTypes.func.isRequired,
         onProgress: React.PropTypes.func.isRequired,
         referrerUrl: React.PropTypes.string,
-        serverConnection: React.PropTypes.object.isRequired,
+        serverConnection: React.PropTypes.object.isRequired
     },
 
     componentWillMount: function() {
         var message = this.validateForm_();
         if (message) {
-            this.props.onError(message)
+            this.props.onError(message);
         }
     },
 
@@ -140,7 +142,7 @@ var ImageSubmitForm = React.createClass({
         event.preventDefault();
         var error = this.validateForm_();
         if (error) {
-             this.props.onError(error)
+            this.props.onError(error);
         } else {
             this.initiateUpload_();
         }
@@ -172,7 +174,7 @@ var ImageSubmitForm = React.createClass({
             {
                 id: 'upload-form',
                 method: 'POST',
-                onSubmit: this.handleOnSubmit_,
+                onSubmit: this.handleOnSubmit_
             },
             React.createElement("label", {htmlFor: 'imageSrc'}, 'Image URL'),
             React.createElement("input",
@@ -202,7 +204,7 @@ var ImageSubmitForm = React.createClass({
                     type: 'text',
                     name: 'img',
                     value: this.state.tagsInput,
-                    className: this.state.tagsInvalid ? 'invalid' : '',
+                    className: this.state.tagsInvalid ? 'invalid' : ''
                 }
             ),
             React.createElement("input",
@@ -257,7 +259,7 @@ var ImageSubmitForm = React.createClass({
 
             reader.onerror = function() {
                 reject(Error('There was an error converting the image blob to a typed array'));
-            }
+            };
 
             reader.readAsArrayBuffer(blob);
         });
@@ -302,7 +304,7 @@ var ImageSubmitForm = React.createClass({
         return sc.createPermanode().then(
             function(data) {
                 console.log('permanode created: ' + data);
-                results.permanoderef = data
+                results.permanoderef = data;
                 return results;
         });
     },
@@ -371,11 +373,12 @@ var ImageSubmitForm = React.createClass({
      *
      * @param {string} url of item to download as blob.
      */
-    getAsBlob_:function (url) {
+    getAsBlob_:function (url, referer) {
         console.log('fetching blob from: ' + url);
         return new Promise(function(resolve, reject) {
             var request = new XMLHttpRequest();
             request.open('GET', url);
+            request.setRequestHeader('X-Referer', referer);
             request.responseType = 'blob';
 
             request.onload = function() {
@@ -404,26 +407,29 @@ var ImageSubmitForm = React.createClass({
         console.log('creating blob from provided dataURL');
         return new Promise(function(resolve, reject) {
             var BASE64_MARKER = ';base64,';
+            
+            var parts = null, contentType = null, raw = null;
+
             if (dataURL.indexOf(BASE64_MARKER) == -1) {
-              var parts = dataURL.split(',');
-              var contentType = parts[0].split(':')[1];
-              var raw = decodeURIComponent(parts[1]);
+                parts = dataURL.split(',');
+                contentType = parts[0].split(':')[1];
+                raw = decodeURIComponent(parts[1]);
 
-              resolve(new Blob([raw], {type: contentType}));
+                resolve(new Blob([raw], {type: contentType}));
+            } else {
+                parts = dataURL.split(BASE64_MARKER);
+                contentType = parts[0].split(':')[1];
+                raw = window.atob(parts[1]);
+                var rawLength = raw.length;
+
+                var uInt8Array = new Uint8Array(rawLength);
+
+                for (var i = 0; i < rawLength; ++i) {
+                    uInt8Array[i] = raw.charCodeAt(i);
+                }
+
+                resolve(new Blob([uInt8Array], {type: contentType}));
             }
-
-            var parts = dataURL.split(BASE64_MARKER);
-            var contentType = parts[0].split(':')[1];
-            var raw = window.atob(parts[1]);
-            var rawLength = raw.length;
-
-            var uInt8Array = new Uint8Array(rawLength);
-
-            for (var i = 0; i < rawLength; ++i) {
-              uInt8Array[i] = raw.charCodeAt(i);
-            }
-
-            resolve(new Blob([uInt8Array], {type: contentType}));
         });
     },
 
@@ -453,11 +459,11 @@ var OptionsPopup = React.createClass({
             React.createElement(OptionsForm,
             {
                 onError: this.setStatus,
-                onProgress: this.setStatus,
+                onProgress: this.setStatus
             }),
             React.createElement(Status,
             {
-                message: this.state.statusMessage,
+                message: this.state.statusMessage
             })
         );
     }
@@ -478,7 +484,7 @@ var OptionsForm = React.createClass({
     runFormValidation_: function() {
         var message = this.validateForm_();
         if (message) {
-            this.props.onError(message)
+            this.props.onError(message);
         }
     },
 
@@ -495,7 +501,7 @@ var OptionsForm = React.createClass({
         .then(this.updateForm_)
         .catch(function(error) {
             this.props.onError(error.message);
-        }.bind(this))
+        }.bind(this));
     },
 
     fetchOptions_: function() {
@@ -503,7 +509,7 @@ var OptionsForm = React.createClass({
             chrome.storage.sync.get(['serverUrl', 'defaultTags'], function(items) {
                 if (chrome.runtime.lastError) {
                     console.log('Error getting options');
-                    reject(chrome.runtime.lastError) // TODO: how to forcibly test this error condition?
+                    reject(chrome.runtime.lastError); // TODO: how to forcibly test this error condition?
                 }
                 resolve(items);
             });
@@ -531,9 +537,9 @@ var OptionsForm = React.createClass({
 
     onFinish_: function() {
         this.props.onProgress('Options saved!');
-        setTimeout(function() {
-              this.props.onProgress('');
-            }.bind(this), 1500);
+        window.setTimeout(function() {
+            this.props.onProgress('');
+        }.bind(this), 1500);
     },
 
     updateForm_: function(options) {
@@ -570,7 +576,7 @@ var OptionsForm = React.createClass({
         return new Promise(function(resolve, reject) {
             if (this.state.defaultTags) {
                 var tags = this.state.defaultTags.split(',').map(function(s) { return s.trim(); });
-                var invalid = tags.some(function(t) { return !t });
+                var invalid = tags.some(function(t) { return !t; });
 
                 if (invalid) {
                     this.setState({
@@ -588,7 +594,7 @@ var OptionsForm = React.createClass({
         return React.createElement("form",
             {
                 id: 'options-form',
-                onSubmit: this.handleOnSubmit_,
+                onSubmit: this.handleOnSubmit_
             },
             React.createElement("label", {htmlFor: 'serverUrl'}, 'Server URL'),
             React.createElement("input",
