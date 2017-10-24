@@ -48,7 +48,7 @@ var Popup = React.createClass({
                 onError: this.setStatus,
                 onProgress: this.setStatus,
                 imgSrc: decodeURIComponent(this.getQueryParam_('imgSrc')),
-                referrerUrl: decodeURIComponent(this.getQueryParam_('referer')),
+                referrerUrl: decodeURIComponent(this.getQueryParam_('referrer')),
                 serverConnection: this.props.serverConnection,
                 defaultTags: this.props.config.defaultTags
             }),
